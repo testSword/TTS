@@ -65,7 +65,7 @@ def mock_tts(request):
 
 # 查询接口
 def select_mock_interface(request):
-    reqdata = request.json
+    reqdata = json.loads(request.body.decode("utf8"))
     # 参数：查询域里的查询字段；
     # 入参：查询字段，分页条数。如果不传，默认查10条，排序为按创建时间倒叙
     interface_lists = []
@@ -87,34 +87,51 @@ def select_mock_interface(request):
     try:
         # 如果传过来的字段包含"service_name"
         if "service_name" in reqdata.keys():
-            interface_list = Mock_interfaces.objects.filter(service_name=reqdata["service_name"]).limit(
-                (page - 1) * page_num, page_num)
+            logger.info(reqdata["service_name"])
+            interface_list = Mock_interfaces.objects.filter(service_name=reqdata["service_name"])
+            all_counts = len(interface_list)
+            # 分页
+            if all_counts - ((page - 1) * page_num) < page_num:
+                interface_list = interface_list[(page - 1) * page_num:]
+            elif all_counts - ((page - 1) * page_num) >= page_num:
+                interface_list = interface_list[(page - 1) * page_num, page_num]
+
         # 如果传过来的字段包含"interface_name"
         if "interface_name" in reqdata.keys():
-            interface_list = Mock_interfaces.query.filter(
-                Mock_interfaces.interface_name == reqdata["interface_name"]).offset(
-                (page - 1) * page_num).limit(page_num)
-
+            interface_list = Mock_interfaces.objects.filter(interface_name = reqdata["interface_name"])
+            all_counts = len(interface_list)
+            # 分页
+            if all_counts - ((page - 1) * page_num) < page_num:
+                interface_list = interface_list[(page - 1) * page_num:]
+            elif all_counts - ((page - 1) * page_num) >= page_num:
+                interface_list = interface_list[(page - 1) * page_num, page_num]
         # 如果传过来的字段包含"interface_path"
         if "interface_path" in reqdata.keys():
-            interface_list = Mock_interfaces.query.filter(
-                Mock_interfaces.interface_path == reqdata["interface_path"]).offset(
-                (page - 1) * page_num).limit(page_num)
+            interface_list = Mock_interfaces.objects.filter(interface_url = reqdata["interface_path"])
+            all_counts = len(interface_list)
+            # 分页
+            if all_counts-((page - 1) * page_num) <page_num:
+                interface_list=interface_list[(page - 1) * page_num:]
+            elif all_counts-((page - 1) * page_num) >=  page_num:
+                interface_list=interface_list[(page - 1) * page_num, page_num]
 
         for item in interface_list:
-            service_name = item.service
-            interface_name = item.interface_name
-            interface_path = item.interface_path
             interface = {
-                "service_name": service_name,
-                "interface_name": interface_name,
-                "interface_path": interface_path,
+                "service_name": item.service_name,
+                "interface_name": item.interface_name,
+                "interface_path": item.interface_url,
             }
             interface_lists.append(interface)
-        res = resp.Resp(data=interface_lists)
+
+        res_data={
+            "counts":all_counts,
+            "interface_lists":interface_lists
+        }
+        res = resp.Resp(data=res_data)
         return JsonResponse(res)
 
     except Exception as e:
+        logger.error(e)
         return JsonResponse({"message": "系统异常", "code": 500})
 
 
