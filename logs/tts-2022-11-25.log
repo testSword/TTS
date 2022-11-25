@@ -1,0 +1,6 @@
+[2022-11-25 08:19:02,549] [views.py:31] [Process-71298]-[Thread-13078413312] [views:mock_tts] [INFO]- 请求路径：/mock
+[2022-11-25 08:19:02,549] [views.py:32] [Process-71298]-[Thread-13078413312] [views:mock_tts] [INFO]- 请求参数：{
+    "interface_path":"/mock/test/111/gggggg",
+    "interface_name":"11111",
+    "service_name":"dasdasdasdas"
+}
