@@ -1,4 +1,6 @@
+import json
 import logging
+import random
 
 from django.http import request, JsonResponse
 
@@ -6,7 +8,7 @@ from django.http import request, JsonResponse
 # coding:utf-8
 from common.Log import logger
 from common.http_resp import resp
-from mock.models import Mock_interfaces
+from mock.models import Mock_interfaces, Mock_lists
 
 '''
 1、提供接口查询能力
@@ -21,31 +23,32 @@ from mock.models import Mock_interfaces
 
 '''
 
+
 # 总的mock入口，所有的第三方请求会有nginx重定向到该接口，由该接口返回对应的响应mock
 def mock_tts(request):
-    if request.method=="GET":
-        #GET请求
-        req_data=request.body.decode("utf8")
+    if request.method in["GET","POST"]:
+        # GET请求
+        req_data = request.body.decode("utf8")
         # 处理请求头里的Referer参数获取原始的请求路径----注意：端口好8101为nginx配置的监听转发的端口号，两边需保持同步
-        req_path=request.headers["Referer"].split("8101")[-1][:-1]
+        req_path = request.headers["Referer"].split("8101")[-1]
         logger.info("请求路径：{}".format(req_path))
         logger.info("请求参数：{}".format(req_data))
         # 返回数据
-        # 根据请url返回对应的mock
-        res=resp.Resp(data="GET")
-        return JsonResponse(res)
-    if request.method=="POST":
-        #POST请求
-        # 请求参数可以不用管。
-        req_data = request.body.decode("utf8")
-        # 处理请求头里的Referer参数获取原始的请求路径----注意：端口好8101为nginx配置的监听转发的端口号，两边需保持同步
-        req_path = request.headers["Referer"].split("8101")[-1][:-1]
-        # logging.INFO("请求路径：{}".format(req_path))
-        # logging.INFO("请求参数：{}".format(req_data))
-        # 根据请url返回对应的mock
+        interface = Mock_interfaces.objects.filter(interface_url=req_path).filter(is_delete=0)[0]
+        interface_mock = interface.interface_mock_id
+        # 如果mock_id为0,则随机返回
+        if interface_mock == 0:
+            mock_lists = Mock_lists.objects.filter(mock_interface_id=interface.id).filter(is_delete=0)
+            mock_data_list = []
+            for item in mock_lists:
+                mock_data_list.append(item.mock_data)
+            interface_mock_data = random.choice(mock_data_list)
 
-        res=resp.Resp(data="dadasd")
-        return JsonResponse(res)
+        # 否则根据mock_id返回对应的mock_data
+        else:
+            interface_mock_data = Mock_lists.objects.filter(id=interface_mock).filter(is_delete=0)[0].mock_data
+        # 根据请url返回对应的mock
+        return JsonResponse(json.loads(interface_mock_data))
 
 
 # 查询接口
@@ -72,17 +75,16 @@ def select_mock_interface(request):
     try:
         # 如果传过来的字段包含"service_name"
         if "service_name" in reqdata.keys():
-            interface_list=Mock_interfaces.objects.filter(service_name=reqdata["service_name"]).limit((page - 1) * page_num,page_num)
+            interface_list = Mock_interfaces.objects.filter(service_name=reqdata["service_name"]).limit(
+                (page - 1) * page_num, page_num)
         # 如果传过来的字段包含"interface_name"
         if "interface_name" in reqdata.keys():
-
             interface_list = Mock_interfaces.query.filter(
                 Mock_interfaces.interface_name == reqdata["interface_name"]).offset(
                 (page - 1) * page_num).limit(page_num)
 
         # 如果传过来的字段包含"interface_path"
         if "interface_path" in reqdata.keys():
-
             interface_list = Mock_interfaces.query.filter(
                 Mock_interfaces.interface_path == reqdata["interface_path"]).offset(
                 (page - 1) * page_num).limit(page_num)
@@ -174,4 +176,3 @@ def shuffle_mock_data():
     '''
     reqdata = request.json
     return "reqdata"
-
