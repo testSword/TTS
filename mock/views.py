@@ -26,29 +26,41 @@ from mock.models import Mock_interfaces, Mock_lists
 
 # 总的mock入口，所有的第三方请求会有nginx重定向到该接口，由该接口返回对应的响应mock
 def mock_tts(request):
-    if request.method in["GET","POST"]:
+    if request.method in ["GET", "POST"]:
         # GET请求
         req_data = request.body.decode("utf8")
         # 处理请求头里的Referer参数获取原始的请求路径----注意：端口好8101为nginx配置的监听转发的端口号，两边需保持同步
         req_path = request.headers["Referer"].split("8101")[-1]
+        if req_path.endswith("/"):
+            req_path=req_path[:-1]
         logger.info("请求路径：{}".format(req_path))
         logger.info("请求参数：{}".format(req_data))
         # 返回数据
-        interface = Mock_interfaces.objects.filter(interface_url=req_path).filter(is_delete=0)[0]
-        interface_mock = interface.interface_mock_id
-        # 如果mock_id为0,则随机返回
-        if interface_mock == 0:
-            mock_lists = Mock_lists.objects.filter(mock_interface_id=interface.id).filter(is_delete=0)
-            mock_data_list = []
-            for item in mock_lists:
-                mock_data_list.append(item.mock_data)
-            interface_mock_data = random.choice(mock_data_list)
-
-        # 否则根据mock_id返回对应的mock_data
-        else:
-            interface_mock_data = Mock_lists.objects.filter(id=interface_mock).filter(is_delete=0)[0].mock_data
-        # 根据请url返回对应的mock
-        return JsonResponse(json.loads(interface_mock_data))
+        try:
+            interface = Mock_interfaces.objects.filter(interface_url=req_path).filter(is_delete=0)
+            if len(interface) > 0:
+                interface_mock = interface[0].interface_mock_id
+                # 如果mock_id为0,则随机返回
+                if interface_mock == 0:
+                    mock_lists = Mock_lists.objects.filter(mock_interface_id=interface.id).filter(is_delete=0)
+                    mock_data_list = []
+                    for item in mock_lists:
+                        mock_data_list.append(item.mock_data)
+                    interface_mock_data = random.choice(mock_data_list)
+                # 否则根据mock_id返回对应的mock_data
+                else:
+                    interface_mock_datas = Mock_lists.objects.filter(id=interface_mock).filter(is_delete=0)
+                    if len(interface_mock_datas)>0:
+                        interface_mock_data=interface_mock_datas[0].mock_data
+                    else:
+                        return JsonResponse({"message": "id为{}的mock规则不存在".format(interface_mock), "code": 100002})
+                # 根据请url返回对应的mock
+                return JsonResponse(json.loads(interface_mock_data))
+            else:
+                return JsonResponse({"message": "该接口未维护", "code": 100001})
+        except Exception as e:
+            logger.error(e)
+            return JsonResponse({"message": "服务异常", "code": 500})
 
 
 # 查询接口
