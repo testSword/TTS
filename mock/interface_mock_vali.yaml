@@ -1,0 +1,13 @@
+#select_mock_interface接口
+select_mock_interface:
+    service_name: { "is_need": 0,"type": "int" }
+    interface_name: { "is_need": 0,"type": "int" }
+    interface_path: { "is_need": 0,"type": "int" }
+    page: { "is_need": 0,"type": "int" }
+    page_num: {"is_need":0,"type":"int"}
+
+#mock数据查询接口
+select_mock_data:
+    mock_interface_id: {"is_need": 0,"type": int}
+
+

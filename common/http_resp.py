@@ -5,7 +5,7 @@
 
 class resp():
     @staticmethod
-    def Resp(data,code="000000",message="请求成功"):
+    def Resp(data=None,code="000000",message="请求成功"):
         resp={}
         resp["code"] = code
         resp["message"] = message

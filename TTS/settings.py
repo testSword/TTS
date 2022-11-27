@@ -14,6 +14,9 @@ import time
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import django.conf
+import yaml
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -40,6 +43,7 @@ CORS_ALLOW_METHODS=('GET','POST')
 CORS_ALLOW_CREDENTIALS=True
 # 允许所有域名跨域(优先选择)
 CORS_ORIGIN_ALLOW_ALL = True
+
 
 
 # 设置兼容url"/"和没有"/"结尾的  ==>目测没啥用
@@ -244,3 +248,10 @@ LOGGING = {
         },
     }
 }
+
+
+# 将接口信息写入内存mock服务
+with open("mock/interface_mock_vali.yaml", "r") as f:
+    MOCK = yaml.safe_load(f)
+
+
