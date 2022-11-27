@@ -250,7 +250,7 @@ LOGGING = {
 }
 
 
-# 将接口信息写入内存mock服务
+# 将mock服务接口校验信息写入settings
 with open("mock/interface_mock_vali.yaml", "r") as f:
     MOCK = yaml.safe_load(f)
 

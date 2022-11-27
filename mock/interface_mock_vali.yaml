@@ -1,13 +1,53 @@
 #select_mock_interface接口
 select_mock_interface:
-    service_name: { "is_need": 0,"type": "int" }
-    interface_name: { "is_need": 0,"type": "int" }
-    interface_path: { "is_need": 0,"type": "int" }
-    page: { "is_need": 0,"type": "int" }
-    page_num: {"is_need":0,"type":"int"}
+    service_name: { "is_need": 1,"type": "str"}
+    interface_name: { "is_need": 1,"type": "str" }
+    interface_path: { "is_need": 1,"type": "str" }
+    page: { "is_need": 1,"type": "int" }
+    page_num: {"is_need":1,"type":"int"}
 
+#新增接口
+add_mock_interface:
+    service_name: { "is_need": 0,"type": "str"}
+    interface_name: { "is_need": 0,"type": "str" }
+    interface_path: { "is_need": 0,"type": "str" }
+    interface_id: { "is_need": 0,"type": "int" }
+
+#更新接口
+update_mock_interface:
+    service_name: { "is_need": 0,"type": "str" }
+    interface_name: { "is_need": 0,"type": "str" }
+    interface_path: { "is_need": 0,"type": "str" }
+
+#删除接口
+delete_mock_interface:
+    interface_id: { "is_need": 0,"type": "int" }
+
+#重制接口mockid
+shuffle_mock_data:
+    interface_id: {"is_need": 0,"type": int}
+
+#指定接口的mock数据
+confirm_mock_data:
+    interface_id: {"is_need": 0,"type": int}
+    mock_id: {"is_need": 0,"type": int}
 #mock数据查询接口
 select_mock_data:
     mock_interface_id: {"is_need": 0,"type": int}
 
+#新增mock数据
+add_mock_data:
+    mock_name: {"is_need": 0,"type": "str"}
+    mock_data: {"is_need": 0,"type": "str"}
+    mock_interface_id: {"is_need": 0,"type": "int"}
 
+#编辑mok数据
+edit_mock_data:
+    mock_id: {"is_need": 0,"type": "int"}
+    mock_data: {"is_need": 0,"type": "str"}
+    mock_name: {"is_need": 0,"type": "str"}
+    mock_interface_id: {"is_need": 0,"type": "int"}
+
+#mock数据删除接口
+delete_mock_data:
+    mock_interface_id: {"is_need": 0,"type": int}

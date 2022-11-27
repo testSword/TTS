@@ -13,7 +13,7 @@ class resp():
         return resp
 
     @staticmethod
-    def error(code="999999", message="系统异常"):
+    def error(code="999999", message="业务处理异常"):
         resp = {}
         resp["code"] = code
         resp["message"] = message

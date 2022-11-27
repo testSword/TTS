@@ -1,15 +1,13 @@
-import json
-import logging
-import os
-import random
-
-from django.http import request, JsonResponse
-
 # Create your views here.
 # coding:utf-8
+
+import json
+import random
+from django.db.models import Q
+from django.http import JsonResponse
 from common.Log import logger
 from common.http_resp import resp
-from interface_define.Validation_interface import validate_interface
+from common.Validation_interface import validate_interface
 from mock.models import Mock_interfaces, Mock_lists
 
 '''
@@ -21,8 +19,7 @@ from mock.models import Mock_interfaces, Mock_lists
 6、提供mock数据编辑能力
 7、提供mock数据删除能力
 8、提供mock数据打散（随机能力）
-9.批量导入接口
-
+9.批量导入接口 TODO:
 '''
 
 
@@ -66,6 +63,7 @@ def mock_tts(request):
 
 
 # 查询接口
+@validate_interface(service="mock",interface_name="select_mock_interface")
 def select_mock_interface(request):
     reqdata = json.loads(request.body.decode("utf8"))
     # 参数：查询域里的查询字段；
@@ -118,7 +116,7 @@ def select_mock_interface(request):
                 "service_name": item.service_name,
                 "interface_name": item.interface_name,
                 "interface_path": item.interface_url,
-                "interface_id":item.id
+                "interface_id": item.id
             }
             interface_lists.append(interface)
 
@@ -135,6 +133,7 @@ def select_mock_interface(request):
 
 
 # 提供mock接口添加能力
+@validate_interface(service="mock",interface_name="add_mock_interface")
 def add_mock_interface(request):
     reqdata = json.loads(request.body.decode("utf8"))
     '''
@@ -148,18 +147,18 @@ def add_mock_interface(request):
     interface_name = reqdata["interface_name"]
     interface_path = reqdata["interface_path"]
     try:
-        interface = Mock_interfaces(service_name=service_name, interface_name=interface_name, interface_url=interface_path)
+        interface = Mock_interfaces(service_name=service_name, interface_name=interface_name,
+                                    interface_url=interface_path)
         interface.save()
         res = resp.Resp(data="添加成功")
         return JsonResponse(res)
     except Exception as e:
         logger.error(e)
-        return JsonResponse({"message":"{}".format(e), "code": 999999})
-
+        return JsonResponse({"message": "{}".format(e), "code": 999999})
 
 
 # 1、提供mock接口更新能力,根据接口id跟新
-
+@validate_interface(service="mock",interface_name="update_mock_interface")
 def update_mock_interface(request):
     reqdata = json.loads(request.body.decode("utf8"))
     '''
@@ -171,10 +170,10 @@ def update_mock_interface(request):
         }
         '''
     logger.info(reqdata)
-    keyword=["interface_id","service_name","interface_name","interface_path"]
+    keyword = ["interface_id", "service_name", "interface_name", "interface_path"]
     for key in keyword:
         if key not in reqdata.keys():
-            return JsonResponse(resp.error(code="999999",message="缺失必需字段{}".format(key)))
+            return JsonResponse(resp.error(code="999999", message="缺失必需字段{}".format(key)))
         if reqdata[key] == "":
             return JsonResponse(resp.error(code="99999", message="{}字段不能为空".format(key)))
 
@@ -182,20 +181,22 @@ def update_mock_interface(request):
     if not interface_list:
         return JsonResponse(resp.error(message="接口不存在或已被删除"))
     if Mock_interfaces.objects.filter(interface_url=reqdata["interface_path"]) and Mock_interfaces.objects.filter(
-        interface_url=reqdata["interface_path"]).first().id !=reqdata["interface_id"]:
+            interface_url=reqdata["interface_path"]).first().id != reqdata["interface_id"]:
         return JsonResponse(resp.error(code="99999", message="已存在相同接口路径{}".format(reqdata["interface_path"])))
     try:
-        interface=interface_list.first()
-        interface.service_name=reqdata["service_name"]
-        interface.interface_name=reqdata["interface_name"]
-        interface.interface_url=reqdata["interface_path"]
+        interface = interface_list.first()
+        interface.service_name = reqdata["service_name"]
+        interface.interface_name = reqdata["interface_name"]
+        interface.interface_url = reqdata["interface_path"]
         interface.save()
         return JsonResponse(resp.Resp())
     except Exception as e:
         logger.error(e)
         return JsonResponse({"message": "{}".format(e), "code": 999999})
 
+
 # 1、、提供mock接口删除能力
+@validate_interface(service="mock",interface_name="delete_mock_interface")
 def delete_mock_interface(request):
     reqdata = json.loads(request.body.decode("utf8"))
     '''
@@ -204,49 +205,51 @@ def delete_mock_interface(request):
         }
         '''
     logger.info("reqdata:{}".format(reqdata))
-    if "interface_id" in reqdata.keys() and reqdata["interface_id"]  !=None:
-        interface=Mock_interfaces.objects.filter(id=reqdata["interface_id"])
+    if "interface_id" in reqdata.keys() and reqdata["interface_id"] != None:
+        interface = Mock_interfaces.objects.filter(id=reqdata["interface_id"])
         if interface:
-            interface[0].is_delete=1
+            interface[0].is_delete = 1
             interface[0].save()
         return JsonResponse(resp.Resp())
     else:
         return JsonResponse(resp.error(message="interface_id缺失或为空"))
 
 
-@validate_interface(service="mock",interface_name="select_mock_data")
+@validate_interface(service="mock", interface_name="select_mock_data")
 def select_mock_data(request):
     reqdata = json.loads(request.body.decode("utf8"))
     "根据接口id查对应的mock数据"
     '''
      "mock_interface_id":"",
     '''
-    mock_data_list=Mock_lists.objects.filter(mock_interface_id=reqdata["mock_interface_id"])
+    mock_data_list = Mock_lists.objects.filter(mock_interface_id=reqdata["mock_interface_id"])
     # 返回的mock数据为：mock_list
-    mock_list=[]
+    mock_list = []
     try:
         for item in mock_data_list:
-            mock={
-                "mock_interface_id":item.mock_interface_id,
+            mock = {
+                "mock_interface_id": item.mock_interface_id,
                 "mock_name": item.mock_name,
                 "mock_data": item.mock_data,
-                "mock_id":item.id
+                "mock_id": item.id
             }
             mock_list.append(mock)
     except Exception as e:
         logger.info(e)
     ##查询当前启用的mock数据
     if Mock_interfaces.objects.filter(id=reqdata["mock_interface_id"]):
-        now_mock_id=Mock_interfaces.objects.filter(id=reqdata["mock_interface_id"])[0].interface_mock_id
-        resp_data={
-            "now_mock_id":now_mock_id,
-            "mock_list":mock_list
+        now_mock_id = Mock_interfaces.objects.filter(id=reqdata["mock_interface_id"])[0].interface_mock_id
+        resp_data = {
+            "now_mock_id": now_mock_id,
+            "mock_list": mock_list
         }
         return JsonResponse(resp.Resp(data=resp_data))
     else:
         return JsonResponse(resp.error(message="该接口不存在或已删除"))
 
+
 # 5、提供mock数据添加能力
+@validate_interface(service="mock", interface_name="add_mock_data")
 def add_mock_data(request):
     reqdata = json.loads(request.body.decode("utf8"))
     '''
@@ -256,23 +259,15 @@ def add_mock_data(request):
             "mock_interface_id":"",
         }
         '''
-    # 判断字段是都存在，字段都必需
-    keyword = ["mock_name", "mock_data", "mock_interface_id"]
-    for key in keyword:
-        if key not in reqdata.keys():
-            return JsonResponse(resp.error(code="999999", message="缺失必需字段{}".format(key)))
-        if reqdata[key] == "":
-            return JsonResponse(resp.error(code="99999", message="{}字段不能为空".format(key)))
-
     # 判断如果该接口存在相同mockname的数据，就返回报错
     # 判断该接口mock是否存在
     if Mock_interfaces.objects.filter(id=reqdata["mock_interface_id"]).filter(is_delete=0):
-        mock_list= Mock_lists.objects.filter(mock_interface_id=reqdata["mock_interface_id"])
+        mock_list = Mock_lists.objects.filter(mock_interface_id=reqdata["mock_interface_id"])
         if mock_list.filter(mock_name=reqdata["mock_name"]).filter(is_delete=0):
-            return JsonResponse(resp.error(code="110001",message="已有相同mock名称的mock数据"))
+            return JsonResponse(resp.error(code="110001", message="已有相同mock名称的mock数据"))
         try:
             mock = Mock_lists(mock_name=reqdata["mock_name"], mock_data=reqdata["mock_data"],
-                                        mock_interface_id=reqdata["mock_interface_id"])
+                              mock_interface_id=reqdata["mock_interface_id"])
             mock.save()
             res = resp.Resp(data="添加成功")
             return JsonResponse(res)
@@ -280,47 +275,90 @@ def add_mock_data(request):
             logger.error(e)
             return JsonResponse({"message": "{}".format(e), "code": 999999})
     else:
-        return JsonResponse(resp.error(code="1000002",message="该mock接口不存在或已删除,无法添加mock"))
+        return JsonResponse(resp.error(code="1000002", message="该mock接口不存在或已删除,无法添加mock"))
+
 
 # # # 6、提供mock数据编辑能力
+@validate_interface(service="mock", interface_name="edit_mock_data")
 def edit_mock_data(request):
     reqdata = json.loads(request.body.decode("utf8"))
     '''
-        {
+        {   
+            "mock_id":""
             "mock_name":"",
             "mock_data":"",
-            "mock_interface_id":"",
+            "mock_interface_id"
         }
         '''
-    # 判断字段是都存在，字段都必需
-    keyword = ["mock_name", "mock_data", "mock_interface_id"]
-    for key in keyword:
-        if key not in reqdata.keys():
-            return JsonResponse(resp.error(code="999999", message="缺失必需字段{}".format(key)))
-        if reqdata[key] == "":
-            return JsonResponse(resp.error(code="99999", message="{}字段不能为空".format(key)))
-
-    return "reqdata"
+    try:
+        mockdata = Mock_lists.objects.filter(mock_interface_id=reqdata["mock_interface_id"])
+        if not mockdata.filter(id=reqdata["mock_id"]).first():
+            return JsonResponse(resp.error(message="mock数据不存在无法修改"))
+        if mockdata.filter(Q(mock_name=reqdata["mock_name"]), ~Q(id=reqdata["mock_id"])):
+            return JsonResponse(resp.error(message="mock_name已存在，不允许重复"))
+        mock_data=mockdata.filter(id=reqdata["mock_id"]).first()
+        mock_data.mock_name=reqdata["mock_name"]
+        mock_data.mock_data=reqdata["mock_data"]
+        mock_data.save()
+        return JsonResponse(resp.Resp())
+    except Exception as e:
+        logger.error(e)
+        return JsonResponse(resp.error(message="{}".format(e)))
 
 
 # # # 7、提供mock数据删除能力
-def delete_mock_data():
-    reqdata = request.json
+@validate_interface(service="mock", interface_name="delete_mock_data")
+def delete_mock_data(request):
+    reqdata = json.loads(request.body.decode("utf8"))
+    '''
+    mock_id
+    '''
+    try:
+        mock_item=Mock_lists.objects.filter(id=reqdata["mock_id"]).first()
+        if mock_item:
+            mock_item.is_delete=1
+            mock_item.save()
+            return JsonResponse(resp.Resp())
+        else:
+            return JsonResponse(resp.Resp(data="请求删除的数据不存在"))
+    except Exception as e:
+        logger.error(e)
+        return JsonResponse(resp.error(message="{}".format(e)))
 
-    return "reqdata"
 
 
-# # # 8、提供mock数据打散（随机能力）
-def shuffle_mock_data():
-    reqdata = request.json
-    return "reqdata"
+# # # 8、将接口的mockid变成0
+@validate_interface(service="mock",interface_name="shuffle_mock_data")
+def shuffle_mock_data(request):
+    reqdata = json.loads(request.body.decode("utf8"))
+    '''
+    interface_id
+    '''
+    interface_item=Mock_interfaces.objects.filter(id=reqdata["interface_id"]).first()
+    if interface_item:
+        interface_item.interface_mock_id=0
+        interface_item.save()
+        return JsonResponse(resp.Resp())
+    else:
+        return JsonResponse(resp.error(message="接口id不存在或已删除"))
 
 
 # # # 8、确认mock数据数据（指定mock数据）
-def confirm_mock_data():
+@validate_interface(service="mock",interface_name="confirm_mock_data")
+def confirm_mock_data(request):
+    reqdata = json.loads(request.body.decode("utf8"))
     '''
-    params:接口path、mockdata编号（yaml文件里的data的index）；
-    :return:
+        interface_id
+        mock_id
     '''
-    reqdata = request.json
-    return "reqdata"
+    interface_item = Mock_interfaces.objects.filter(id=reqdata["interface_id"]).first()
+    mock_item=Mock_lists.objects.filter(id=reqdata["mock_id"]).first()
+    if interface_item and mock_item:
+        interface_item.interface_mock_id = reqdata["mock_id"]
+        interface_item.save()
+        return JsonResponse(resp.Resp())
+    else:
+        return JsonResponse(resp.error(message="接口id或mockid不存在或已删除"))
+
+
+### todo:批量导入接口
