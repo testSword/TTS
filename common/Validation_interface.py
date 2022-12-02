@@ -18,7 +18,7 @@ def validate_interface(service,interface_name):
         def validate(request,*args, **kwargs):
             if service == "mock":
                 interface_rule=MOCK[interface_name]
-            reqdata=json.loads(request.body.decode("utf8"))
+            reqdata = request.POST
             logger.info(reqdata)
             #根据服务名以及接口名获取接口入参规则（是否必输，以及字段类型）：
             # 找到必须字段
@@ -32,10 +32,12 @@ def validate_interface(service,interface_name):
                     return JsonResponse(resp.error(code="999999", message="缺失必需字段{}".format(key)))
                 if reqdata[key] == "":
                     return JsonResponse(resp.error(code="99999", message="{}字段不能为空".format(key)))
-            # 字段类型入参校验,取出req里的所有参数去匹配interface_rule里的参数类型
-            for item in reqdata.keys():
-                if not isinstance(reqdata[item],eval(interface_rule[item]["type"])):
-                    return JsonResponse(resp.error(code="99999", message="{}字段类型不为{}".format(item,interface_rule[item]["type"])))
+            # # 字段类型入参校验,取出req里的所有参数去匹配interface_rule里的参数类型
+            # for item in reqdata.keys():
+            #     if item in interface_rule.keys():
+            #         if not isinstance(reqdata[item],eval(interface_rule[item]["type"])):
+            #             return JsonResponse(resp.error(code="99999", message="{}字段类型不为{}".format(item,interface_rule[item]["type"])))
             return func(request,*args, **kwargs)
         return validate
     return wrapper
+

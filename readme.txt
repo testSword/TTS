@@ -7,7 +7,6 @@ python3 manage.py migrate
 ###创建模块
 python3 manage.py startapp 模块名
 
-
 ###生成requirements
 python3 -m pip freeze > requirements.txt
 python3 -m pip install -r requirements.txt

@@ -65,7 +65,8 @@ def mock_tts(request):
 # 查询接口
 @validate_interface(service="mock",interface_name="select_mock_interface")
 def select_mock_interface(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    # reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     # 参数：查询域里的查询字段；
     # 入参：查询字段，分页条数。如果不传，默认查10条，排序为按创建时间倒叙
     interface_lists = []
@@ -86,24 +87,23 @@ def select_mock_interface(request):
         page_num = 10
     try:
         # 如果传过来的字段包含"service_name"
-        if "service_name" in reqdata.keys():
+        if "service_name" in reqdata.keys() and reqdata["service_name"]:
             logger.info(reqdata["service_name"])
-            interface_list = Mock_interfaces.objects.filter(service_name=reqdata["service_name"])
+            interface_list = Mock_interfaces.objects.filter(service_name=reqdata["service_name"]).filter(is_delete = 0)
             all_counts = len(interface_list)
 
         # 如果传过来的字段包含"interface_name"
-        elif "interface_name" in reqdata.keys():
-            interface_list = Mock_interfaces.objects.filter(interface_name=reqdata["interface_name"])
+        elif "interface_name" in reqdata.keys() and reqdata["interface_name"]:
+            interface_list = Mock_interfaces.objects.filter(interface_name=reqdata["interface_name"]).filter(is_delete = 0)
             all_counts = len(interface_list)
 
         # 如果传过来的字段包含"interface_path"
-        elif "interface_path" in reqdata.keys():
-            interface_list = Mock_interfaces.objects.filter(interface_url=reqdata["interface_path"])
+        elif "interface_path" in reqdata.keys() and reqdata["interface_path"]:
+            interface_list = Mock_interfaces.objects.filter(interface_url=reqdata["interface_path"]).filter(is_delete = 0)
             all_counts = len(interface_list)
-
-        # 如果传过来的值为空，则默认查询所有
+        # 如果传过来的字段或字段值为空为空，则默认查询所有
         else:
-            interface_list = Mock_interfaces.objects.all()
+            interface_list = Mock_interfaces.objects.all().filter(is_delete = 0)
             all_counts = len(interface_list)
         # 分页
         if all_counts - ((page - 1) * page_num) < page_num:
@@ -135,7 +135,7 @@ def select_mock_interface(request):
 # 提供mock接口添加能力
 @validate_interface(service="mock",interface_name="add_mock_interface")
 def add_mock_interface(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     '''
     {
         "service_name":"",
@@ -160,7 +160,7 @@ def add_mock_interface(request):
 # 1、提供mock接口更新能力,根据接口id跟新
 @validate_interface(service="mock",interface_name="update_mock_interface")
 def update_mock_interface(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     '''
         {
             "interface_id":""//必传
@@ -180,8 +180,7 @@ def update_mock_interface(request):
     interface_list = Mock_interfaces.objects.filter(id=reqdata["interface_id"])
     if not interface_list:
         return JsonResponse(resp.error(message="接口不存在或已被删除"))
-    if Mock_interfaces.objects.filter(interface_url=reqdata["interface_path"]) and Mock_interfaces.objects.filter(
-            interface_url=reqdata["interface_path"]).first().id != reqdata["interface_id"]:
+    if Mock_interfaces.objects.filter(Q(interface_url=reqdata["interface_path"]), ~Q(id=reqdata["interface_id"])):
         return JsonResponse(resp.error(code="99999", message="已存在相同接口路径{}".format(reqdata["interface_path"])))
     try:
         interface = interface_list.first()
@@ -198,7 +197,7 @@ def update_mock_interface(request):
 # 1、、提供mock接口删除能力
 @validate_interface(service="mock",interface_name="delete_mock_interface")
 def delete_mock_interface(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     '''
         {
             "interface_id":""//必传
@@ -217,12 +216,12 @@ def delete_mock_interface(request):
 
 @validate_interface(service="mock", interface_name="select_mock_data")
 def select_mock_data(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     "根据接口id查对应的mock数据"
     '''
      "mock_interface_id":"",
     '''
-    mock_data_list = Mock_lists.objects.filter(mock_interface_id=reqdata["mock_interface_id"])
+    mock_data_list = Mock_lists.objects.filter(mock_interface_id=reqdata["mock_interface_id"]).filter(is_delete=0)
     # 返回的mock数据为：mock_list
     mock_list = []
     try:
@@ -230,7 +229,7 @@ def select_mock_data(request):
             mock = {
                 "mock_interface_id": item.mock_interface_id,
                 "mock_name": item.mock_name,
-                "mock_data": item.mock_data,
+                "mock_json": item.mock_data,
                 "mock_id": item.id
             }
             mock_list.append(mock)
@@ -251,7 +250,7 @@ def select_mock_data(request):
 # 5、提供mock数据添加能力
 @validate_interface(service="mock", interface_name="add_mock_data")
 def add_mock_data(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     '''
         {
             "mock_name":"",
@@ -281,7 +280,8 @@ def add_mock_data(request):
 # # # 6、提供mock数据编辑能力
 @validate_interface(service="mock", interface_name="edit_mock_data")
 def edit_mock_data(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
+    print(reqdata)
     '''
         {   
             "mock_id":""
@@ -309,7 +309,7 @@ def edit_mock_data(request):
 # # # 7、提供mock数据删除能力
 @validate_interface(service="mock", interface_name="delete_mock_data")
 def delete_mock_data(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     '''
     mock_id
     '''
@@ -330,7 +330,7 @@ def delete_mock_data(request):
 # # # 8、将接口的mockid变成0
 @validate_interface(service="mock",interface_name="shuffle_mock_data")
 def shuffle_mock_data(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     '''
     interface_id
     '''
@@ -346,7 +346,7 @@ def shuffle_mock_data(request):
 # # # 8、确认mock数据数据（指定mock数据）
 @validate_interface(service="mock",interface_name="confirm_mock_data")
 def confirm_mock_data(request):
-    reqdata = json.loads(request.body.decode("utf8"))
+    reqdata=request.POST
     '''
         interface_id
         mock_id

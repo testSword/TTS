@@ -18,10 +18,12 @@ update_mock_interface:
     service_name: { "is_need": 0,"type": "str" }
     interface_name: { "is_need": 0,"type": "str" }
     interface_path: { "is_need": 0,"type": "str" }
+    interface_id: { "is_need": 0,"type": "str" }
+
 
 #删除接口
 delete_mock_interface:
-    interface_id: { "is_need": 0,"type": "int" }
+    interface_id: { "is_need": 0,"type": "str" }
 
 #重制接口mockid
 shuffle_mock_data:
